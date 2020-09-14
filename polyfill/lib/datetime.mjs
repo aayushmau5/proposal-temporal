@@ -2,6 +2,7 @@
 
 import { GetDefaultCalendar } from './calendar.mjs';
 import { ES } from './ecmascript.mjs';
+import { DateTimeFormat } from './intl.mjs';
 import { GetIntrinsic, MakeIntrinsicClass } from './intrinsicclass.mjs';
 
 import {
@@ -70,6 +71,10 @@ export class DateTime {
       });
     }
   }
+  get calendar() {
+    if (!ES.IsTemporalDateTime(this)) throw new TypeError('invalid receiver');
+    return GetSlot(this, CALENDAR);
+  }
   get year() {
     if (!ES.IsTemporalDateTime(this)) throw new TypeError('invalid receiver');
     return GetSlot(this, CALENDAR).year(this);
@@ -105,10 +110,6 @@ export class DateTime {
   get nanosecond() {
     if (!ES.IsTemporalDateTime(this)) throw new TypeError('invalid receiver');
     return GetSlot(this, NANOSECOND);
-  }
-  get calendar() {
-    if (!ES.IsTemporalDateTime(this)) throw new TypeError('invalid receiver');
-    return GetSlot(this, CALENDAR);
   }
   get era() {
     if (!ES.IsTemporalDateTime(this)) throw new TypeError('invalid receiver');
@@ -563,9 +564,9 @@ export class DateTime {
     let resultString = `${year}-${month}-${day}T${hour}:${minute}${seconds}${calendar}`;
     return resultString;
   }
-  toLocaleString(...args) {
+  toLocaleString(locales = undefined, options = undefined) {
     if (!ES.IsTemporalDateTime(this)) throw new TypeError('invalid receiver');
-    return new Intl.DateTimeFormat(...args).format(this);
+    return new DateTimeFormat(locales, options).format(this);
   }
   valueOf() {
     throw new TypeError('use compare() or equals() to compare Temporal.DateTime');
@@ -625,7 +626,7 @@ export class DateTime {
     const overflow = ES.ToTemporalOverflow(options);
     const TemporalCalendar = GetIntrinsic('%Temporal.Calendar%');
     let result;
-    if (typeof item === 'object' && item) {
+    if (ES.Type(item) === 'Object') {
       if (ES.IsTemporalDateTime(item)) {
         const year = GetSlot(item, ISO_YEAR);
         const month = GetSlot(item, ISO_MONTH);
@@ -706,8 +707,8 @@ export class DateTime {
       const val2 = GetSlot(two, slot);
       if (val1 !== val2) return ES.ComparisonResult(val1 - val2);
     }
-    const cal1 = GetSlot(one, CALENDAR).id;
-    const cal2 = GetSlot(two, CALENDAR).id;
+    const cal1 = ES.CalendarToString(GetSlot(one, CALENDAR));
+    const cal2 = ES.CalendarToString(GetSlot(two, CALENDAR));
     return ES.ComparisonResult(cal1 < cal2 ? -1 : cal1 > cal2 ? 1 : 0);
   }
 }
